@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Absensi Ramadhan Impact Day 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        /* --- GAYA UNTUK LAYAR (SCREEN) --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            padding: 30px 20px;
+        }
+
+        .dashboard {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 992px) {
+            .dashboard {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+            .scanner-panel {
+                flex: 1;
+                position: sticky;
+                top: 30px;
+            }
+            .data-panel {
+                flex: 2.5;
+            }
+        }
+
+        .panel {
+            background-color: #ffffff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            overflow-x: auto;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a202c;
+            margin-bottom: 16px;
+            border-bottom: 2px solid #edf2f7;
+            padding-bottom: 10px;
+        }
+
+        /* Scanner Styling */
+        #reader {
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px dashed #cbd5e0;
+        }
+
+        /* Status Notifications */
+        .status-hidden { display: none; }
+        .status-visible {
+            display: block;
+            margin-top: 16px;
+            padding: 14px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 14px;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .success { background-color: #c6f6d5; color: #22543d; border: 1px solid #9ae6b4; }
+        .error { background-color: #fed7d7; color: #742a2a; border: 1px solid #feb2b2; }
+        .warning { background-color: #feebc8; color: #7b341e; border: 1px solid #fbd38d; }
+
+        /* Table Styling */
+        .table-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .stats {
+            background-color: #ebf8ff;
+            color: #2b6cb0;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-print, .btn-reset {
+            padding: 10px 18px;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+        
+        .btn-print { background-color: #3182ce; }
+        .btn-print:hover { background-color: #2b6cb0; box-shadow: 0 2px 8px rgba(43, 108, 176, 0.3); }
+
+        .btn-reset { background-color: #e53e3e; }
+        .btn-reset:hover { background-color: #c53030; box-shadow: 0 2px 8px rgba(229, 62, 62, 0.3); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            word-wrap: break-word;
+        }
+
+        th {
+            background-color: #f7fafc;
+            color: #4a5568;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.05em;
+        }
+
+        tbody tr:hover { background-color: #f7fafc; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 30px;
+            color: #a0aec0;
+            font-style: italic;
+        }
+
+        .print-only { display: none; }
+
+
+        /* --- GAYA UNTUK CETAK (PRINT) --- */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 1.2cm;
+            }
+
+            body {
+                background-color: #fff;
+                padding: 0;
+                font-family: 'Times New Roman', Times, serif; 
+            }
+
+            .dashboard { display: block; max-width: 100%; margin: 0; gap: 0; }
+            .panel { box-shadow: none; padding: 0; border-radius: 0; border: none; overflow: visible; }
+            .no-print { display: none !important; }
+            .print-only { display: block; }
+
+            .kop-surat {
+                text-align: center;
+                border-bottom: 3px double #000; 
+                padding-bottom: 10px;
+                margin-bottom: 15px;
+            }
+
+            .kop-text {
+                width: 100%;
+                line-height: 1.2;
+            }
+
+            .kop-text h3 { font-size: 11pt; font-weight: normal; margin: 0; text-transform: uppercase; }
+            .kop-text h2 { font-size: 13pt; font-weight: bold; margin: 0; text-transform: uppercase; }
+            .kop-text h1 { font-size: 15pt; font-weight: bold; margin: 2px 0; text-transform: uppercase; }
+            .kop-text p { font-size: 9pt; margin: 4px 0 0 0; font-style: italic; }
+
+            .doc-title {
+                text-align: center;
+                font-size: 12pt;
+                font-weight: bold;
+                text-decoration: underline;
+                margin-bottom: 15px;
+                text-transform: uppercase;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 9pt; 
+                margin-bottom: 10px;
+                table-layout: fixed;
+            }
+
+            th, td {
+                border: 1px solid #000; 
+                padding: 5px 6px; 
+                color: #000;
+                word-wrap: break-word;
+            }
+
+            th {
+                background-color: #e2e8f0 !important;
+                -webkit-print-color-adjust: exact;
+                text-transform: none;
+                font-size: 9.5pt;
+                font-weight: bold;
+                text-align: center;
+            }
+
+            td:nth-child(1) { text-align: center; width: 5%; } /* No */
+            td:nth-child(2) { text-align: center; width: 15%; } /* Kode Tiket */
+            td:nth-child(3) { width: 30%; } /* Nama */
+            td:nth-child(4) { width: 35%; } /* Asal Instansi */
+            td:nth-child(5) { text-align: center; width: 15%; } /* Waktu */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        
+        <div class="panel scanner-panel no-print">
+            <div class="panel-title">Pemindai Tiket Kehadiran</div>
+            <div id="reader"></div>
+            <div id="scan-status" class="status-hidden"></div>
+        </div>
+
+        <div class="panel data-panel">
+            
+            <div class="kop-surat print-only">
+                <div class="kop-text">
+                    <h3>Kementerian Pendidikan Tinggi, Sains, Teknologi</h3>
+                    <h2>Universitas Trunojoyo Madura</h2>
+                    <h2>Fakultas Teknik</h2>
+                    <h2>Himpunan Mahasiswa Teknik Informatika</h2>
+                    <h1>Komunitas Linux, Siber, dan Teknologi Informasi</h1>
+                    <p>Sekretariat : Universitas Trunojoyo Madura Fakultas Teknik Jl. Raya Telang PO BOX 02</p>
+                </div>
+            </div>
+
+            <div class="doc-title print-only">
+                Daftar Hadir Ramadhan Impact Day 2026
+            </div>
+
+            <div class="table-header-flex no-print">
+                <div class="panel-title" style="border: none; margin: 0; padding: 0;">Data Kehadiran Real-time</div>
+                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <span class="stats">Hadir: <span id="total-count">0</span>/29</span>
+                    <div class="btn-group">
+                        <button onclick="resetData()" class="btn-reset">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>
+                            Reset
+                        </button>
+                        <button onclick="printAttendance()" class="btn-print">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"></path></svg>
+                            Cetak PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <table id="attendance-table">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Kode Tiket</th>
+                        <th>Nama Peserta</th>
+                        <th>Asal Instansi</th>
+                        <th>Waktu Presensi</th>
+                    </tr>
+                </thead>
+                <tbody id="attendance-body">
+                    <tr>
+                        <td colspan="5" class="empty-state">Belum ada peserta yang melakukan *scan* tiket.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+
+    <script>
+        // Data JSON peserta
+       const participantsData = [
+    { "name": "Ahmad Arfani", "code": "RID26-B61ZKW", "email": "arfanionline@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Ach. Fauzul Akbar", "code": "RID26-V0LZQ7", "email": "fauzulakbar456@gmail.com", "instansi": "Sistem Informasi" },
+    { "name": "M. Andhika B.P.", "code": "RID26-8HAWHO", "email": "mandhkbprtma.316@gmail.com", "instansi": "Sistem Informasi" },
+    { "name": "Muhamad Jayro Fadil Mukolip", "code": "RID26-IHY3R3", "email": "natakenzie745@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Sucipto Budiono", "code": "RID26-A82I0N", "email": "suciptobuduono8@gmail.com", "instansi": "Koalisi" },
+    { "name": "Muhammad Nailul Jihar", "code": "RID26-H5WND2", "email": "nailuljihar07@gmail.com", "instansi": "Sistem Informasi" },
+    { "name": "M Zakaria Putra", "code": "RID26-KZO6F3", "email": "zkyraputra@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "A. Choiril Anwar EL-Asfihani Risydan", "code": "RID26-08CWBI", "email": "achoirilanwar01@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Yohanes Oktanio", "code": "RID26-YQX1FS", "email": "yohanesoktayt72@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Qomaruddin", "code": "RID26-AK47PR", "email": "qomaruddinlail@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Alicia tiara anaya", "code": "RID26-2O2O1J", "email": "aliciatiara2006@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Rina Suhita", "code": "RID26-U54ISV", "email": "rinasuhita127@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Verdi Setyawan Ardiansyah Putra", "code": "RID26-NQCJLW", "email": "setiawanferdi622@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Fedro Aditya Ginting", "code": "RID26-FDSCVJ", "email": "fedroginting0@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Sofiatul Adawiyah Fatha", "code": "RID26-573V3F", "email": "sofiatuladawiyah348@gmail.com", "instansi": "Pendidikan Guru Sekolah Dasar" },
+    { "name": "Wisnu Aji Saka Pratama Putra", "code": "RID26-E1FDYF", "email": "Wisnuajisaka02@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Erlangga Setiawan Tohpati", "code": "RID26-92W4N0", "email": "250411100140@student.trunojoyo.ac.id", "instansi": "Teknik Informatika" },
+    { "name": "Nabila Maula Zakia", "code": "RID26-WOK8QR", "email": "nabilamaula78@gmail.com", "instansi": "Pendidikan Guru Sekolah Dasar" },
+    { "name": "Ainur Raftuzzaki", "code": "RID26-NDUUTD", "email": "ainurraftuzaki@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Muhammad Daffa Imanul Hakim", "code": "RID26-X1J1OH", "email": "daffauzumaki0@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Moh Ziyad Afandi", "code": "RID26-3BKX6F", "email": "yadziyad22@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Reno Syaelendra", "code": "RID26-7OMOUJ", "email": "renoslendra@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Fadel Maulana", "code": "RID26-QOODHK", "email": "maulanafadel78@gmail.com", "instansi": "Ekonomi Pembangunan" },
+    { "name": "Yosua Abraham Zega", "code": "RID26-DMU3E9", "email": "yosuazega51@gmail.com", "instansi": "Ekonomi Pembangunan" },
+    { "name": "Mohammad Dani Ferdiansyah", "code": "RID26-XBEDX6", "email": "rinovacitra54@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Anzumil Hidayatullah", "code": "RID26-BZ1VHP", "email": "240411100151@student.trunojoyo.ac.id", "instansi": "Teknik Informatika" },
+    { "name": "Muhammad Zaidan Nabil Rafi", "code": "RID26-Y7TDJH", "email": "zaidannabil2212@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Kasyfu Rafi S", "code": "RID26-F5D55V", "email": "Kasyfurafi@gmail.com", "instansi": "Teknik Informatika" },
+    { "name": "Muhammad Isa", "code": "RID26-Y7TDJT", "email": "misa7272@gmail.com", "instansi": "Teknik Informatika" },
+];
+
+        // 1. Ambil data dari Local Storage saat halaman dimuat (jika ada)
+        let presentAttendees = JSON.parse(localStorage.getItem('rid_attendance_2026')) || [];
+        let isProcessingScan = false;
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('scan-status');
+            statusDiv.innerText = message;
+            statusDiv.className = `status-visible ${type}`;
+            setTimeout(() => { statusDiv.className = 'status-hidden'; }, 2500); 
+        }
+
+        function updateTable() {
+            const tbody = document.getElementById('attendance-body');
+            const totalCount = document.getElementById('total-count');
+            
+            tbody.innerHTML = ''; 
+            
+            if (presentAttendees.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="empty-state">Belum ada peserta yang melakukan *scan* tiket.</td></tr>`;
+            } else {
+                presentAttendees.forEach((attendee, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td>${attendee.code}</td>
+                        <td>${attendee.name}</td>
+                        <td>${attendee.instansi}</td>
+                        <td>${attendee.time}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+            totalCount.innerText = presentAttendees.length;
+        }
+
+        // 2. Render data yang tersimpan dari Local Storage segera setelah halaman dimuat
+        updateTable();
+
+        function onScanSuccess(decodedText, decodedResult) {
+            if (isProcessingScan) return;
+            isProcessingScan = true;
+
+            const scannedCode = decodedText.trim();
+            const participant = participantsData.find(p => p.code === scannedCode);
+
+            if (participant) {
+                const alreadyScanned = presentAttendees.find(p => p.code === scannedCode);
+                
+                if (alreadyScanned) {
+                    showStatus(`Peserta ${participant.name} sudah absen!`, 'warning');
+                } else {
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                    presentAttendees.push({
+                        code: participant.code,
+                        name: participant.name,
+                        email: participant.email,
+                        instansi: participant.instansi,
+                        time: timeString
+                    });
+
+                    // 3. Simpan pembaruan array ke Local Storage
+                    localStorage.setItem('rid_attendance_2026', JSON.stringify(presentAttendees));
+
+                    updateTable();
+                    showStatus(`Berhasil! Selamat datang ${participant.name}`, 'success');
+                }
+            } else {
+                showStatus(`Kode tiket ${scannedCode} tidak terdaftar!`, 'error');
+            }
+
+            setTimeout(() => { isProcessingScan = false; }, 1500);
+        }
+
+        function onScanFailure(error) {
+            // Abaikan error deteksi per frame agar konsol tidak bising
+        }
+
+        const html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", 
+            { fps: 30, formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ], disableFlip: false }, 
+            false
+        );
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+
+        function printAttendance() {
+            if(presentAttendees.length === 0) {
+                if(!confirm("Tabel masih kosong. Tetap cetak form absen kosong?")) return;
+            }
+            window.print();
+        }
+
+        // 4. Fungsi untuk menghapus data dari Local Storage dan mereset tabel
+        function resetData() {
+            if(confirm("Yakin ingin mereset seluruh data kehadiran? Aksi ini tidak dapat dibatalkan.")) {
+                presentAttendees = []; // Kosongkan array di RAM
+                localStorage.removeItem('rid_attendance_2026'); // Hapus data dari memori browser
+                updateTable(); // Perbarui tampilan
+                showStatus("Data berhasil direset.", "success");
+            }
+        }
+    </script>
+</body>
+</html>
